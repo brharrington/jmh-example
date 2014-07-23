@@ -1,0 +1,70 @@
+
+// Establish version and status
+ext.githubProjectName = 'jmh-example'
+
+buildscript {
+  repositories {
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+  }
+
+  apply from: file('gradle/buildscript.gradle'), to: buildscript 
+}
+
+allprojects {
+  apply plugin: 'java'
+  apply plugin: 'idea'
+  apply plugin: 'me.champeau.gradle.jmh'
+
+  repositories { 
+    mavenLocal()
+    mavenCentral()
+  }
+}
+
+apply from: file('gradle/convention.gradle')
+apply from: file('gradle/maven.gradle')
+apply from: file('gradle/check.gradle')
+apply from: file('gradle/license.gradle')
+apply from: file('gradle/release.gradle')
+
+subprojects {
+  group = "com.netflix.${githubProjectName}"
+
+  sourceCompatibility = 1.7
+  targetCompatibility = 1.7
+
+  tasks.withType(Compile) { 
+    options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation" 
+  }
+
+  javadoc {
+    options {
+      links = ['http://docs.oracle.com/javase/7/docs/api/']
+    }
+  }
+
+  dependencies {
+    compile 'org.slf4j:slf4j-api:1.7.6'
+    testCompile 'junit:junit:4.10'
+  }
+
+  jmh {
+    include '.*'
+  }
+
+  task copyDepsToBuild << {
+    ['compile', 'runtime', 'testCompile', 'testRuntime'].each { conf ->
+      delete "${buildDir}/dependencies/${conf}"
+      copy {
+        from configurations[conf]
+        into "${buildDir}/dependencies/${conf}"
+      }
+    }
+  }
+}
+
+project(':jmh-example') {
+
+}
